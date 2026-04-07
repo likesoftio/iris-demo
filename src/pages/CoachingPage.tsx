@@ -1,500 +1,251 @@
-import { ArrowRight, BookOpen, CheckCircle2, CheckSquare, ChevronRight, Square, Target, TrendingUp, User } from 'lucide-react'
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Link } from 'react-router-dom'
+import { Zap, Target, CheckSquare, Square, TrendingDown, ArrowRight } from 'lucide-react'
+import { coachingPriorities, speechTemplates, operatorProfiles, weeklyChecklist } from '../data/demoData'
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
+const fade = (delay = 0) => ({
+  initial: { opacity: 0, y: 24 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.45, ease: 'easeOut' as const, delay },
+})
 
-const coachingPriorities = [
-  {
-    id: 'next-step',
-    rank: 1,
-    title: 'Фиксация следующего шага',
-    description: 'Администратор должна заканчивать каждый тёплый разговор конкретным действием: записью, датой обратного звонка или подтверждённым временем визита.',
-    frequency: 45,
-    impactLabel: '+15 записей/мес',
-    callsCount: 12,
-    featured: true,
-  },
-  {
-    id: 'premium-close',
-    rank: 2,
-    title: 'Перевод high-ticket интереса в консультацию',
-    description: 'Дорогие запросы (хрусталики, коррекция, операции) требуют отдельного сценария — не справки, а продажи следующего визита.',
-    frequency: 32,
-    impactLabel: '+8 записей/мес',
-    callsCount: 7,
-    featured: false,
-  },
-  {
-    id: 'schedule-friction',
-    title: 'Работа с закрытым расписанием',
-    rank: 3,
-    description: 'Когда нет окна у нужного врача, администратор должна предлагать альтернативу, а не перекладывать ответственность на пациента.',
-    frequency: 28,
-    impactLabel: '+6 записей/мес',
-    callsCount: 8,
-    featured: false,
-  },
-]
-
-const speechTemplates = [
-  {
-    id: 'booking-close',
-    skill: 'Предложение записи',
-    before: 'Если вас интересует — перезвоните нам, мы подберём время.',
-    after: 'Я уже вижу окно на завтра у подходящего специалиста. Давайте сразу запишу — удобнее утро или вторая половина дня?',
-    why: 'Конкретное предложение снимает барьер «я подумаю»: пациенту проще согласиться, чем инициировать повторный звонок.',
-  },
-  {
-    id: 'price-to-booking',
-    skill: 'После вопроса о цене',
-    before: 'Цена от 15 000 рублей, можете уточнить на сайте.',
-    after: 'Первичная консультация — 2 500 ₽, займёт около 40 минут. Ближайшее окно есть в четверг в 11:00 — записать вас?',
-    why: 'Цена должна заканчиваться следующим шагом, иначе она становится возражением, а не информацией.',
-  },
-  {
-    id: 'no-slot',
-    skill: 'Закрытое расписание',
-    before: 'К сожалению, у нас пока нет окон. Перезвоните через неделю.',
-    after: 'У этого врача ближайшее окно откроется в понедельник. Давайте я запишу вас прямо сейчас, чтобы место не ушло?',
-    why: 'Инициатива должна оставаться у администратора — пациент не перезвонит, если ему не дать причину.',
-  },
-]
-
-const operatorProfiles = [
-  {
-    id: 'darya',
-    name: 'Дарья',
-    avgScore: 73,
-    callsHandled: 17,
-    riskShare: '29%',
-    strengths: ['Быстрые и точные ответы на прямые вопросы', 'Не теряет нить разговора'],
-    growthPoints: [
-      { label: 'Предложение записи', note: 'нарушение в 7 из 8 тёплых звонков' },
-      { label: 'Premium-сценарий', note: 'высокий интерес не переводится в консультацию' },
-    ],
-    priority: true,
-  },
-  {
-    id: 'alexandra',
-    name: 'Александра',
-    avgScore: 79,
-    callsHandled: 45,
-    riskShare: '24%',
-    strengths: ['Хорошо держит повторные пациенты', 'Уверенный сервисный тон'],
-    growthPoints: [
-      { label: 'Закрытое расписание', note: 'возвращает ответственность пациенту' },
-      { label: 'Фиксация следующего шага', note: 'в 6 из 10 повторных кейсов нет брони' },
-    ],
-    priority: false,
-  },
-]
-
-const weeklyChecklist = [
-  { id: 'c1', text: 'Проверить долю звонков с предложением записи (цель: выше 60%)' },
-  { id: 'c2', text: 'Провести разбор 2–3 звонков Дарьи с командой' },
-  { id: 'c3', text: 'Проверить долю «высокий риск» (цель: ниже 25%)' },
-  { id: 'c4', text: 'Отработать шаблон «цена → следующий шаг» на планёрке' },
-  { id: 'c5', text: 'Зафиксировать улучшенные формулировки в базе знаний' },
-]
-
-const baselineMetrics = [
-  { label: 'Booking rate', value: '29.5%' },
-  { label: 'Высокий риск', value: '39.5%' },
-  { label: 'Средний балл', value: '64/100' },
-]
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function CoachingPriorityCard({ item, index }: { item: typeof coachingPriorities[0]; index: number }) {
-  if (item.featured) {
-    return (
-      <motion.article
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: 'easeOut', delay: index * 0.08 }}
-        className="relative overflow-hidden rounded-[1.75rem] bg-[linear-gradient(135deg,rgba(31,183,201,0.12),rgba(107,198,255,0.07))] p-7 ring-2 ring-cyan-300/60"
-      >
-        <span className="absolute right-6 top-6 text-6xl font-black leading-none text-cyan-500/15 select-none">
-          #{item.rank}
-        </span>
-        <div className="inline-flex items-center gap-1.5 rounded-full bg-cyan-500/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-cyan-800">
-          <Target className="size-3" />
-          Приоритет #{item.rank}
-        </div>
-        <h3 className="mt-4 text-xl font-semibold tracking-[-0.03em] text-[#0d2430] pr-10">
-          {item.title}
-        </h3>
-        <p className="mt-2.5 text-sm leading-6 text-[#466372]">{item.description}</p>
-
-        <div className="mt-5">
-          <div className="flex items-center justify-between text-xs mb-1.5">
-            <span className="text-[#466372]">Встречается в звонках</span>
-            <span className="font-semibold text-[#0d2430]">{item.frequency}%</span>
-          </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-cyan-100">
-            <div
-              className="h-full rounded-full bg-[#1fb7c9]"
-              style={{ width: `${item.frequency}%` }}
-            />
-          </div>
-        </div>
-
-        <div className="mt-5 flex items-center justify-between">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
-            <TrendingUp className="size-3" />
-            {item.impactLabel}
-          </span>
-          <Link
-            to="/calls"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-700 hover:text-cyan-900 transition-colors"
-          >
-            Примеры ({item.callsCount})
-            <ChevronRight className="size-3.5" />
-          </Link>
-        </div>
-      </motion.article>
-    )
-  }
-
-  return (
-    <motion.article
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: 'easeOut', delay: index * 0.08 }}
-      className="relative overflow-hidden rounded-[1.75rem] bg-white p-7 shadow-[var(--shadow-soft)] ring-1 ring-[var(--line-soft)]"
-    >
-      <span className="absolute right-6 top-6 text-6xl font-black leading-none text-slate-200 select-none">
-        #{item.rank}
-      </span>
-      <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-        Приоритет #{item.rank}
-      </div>
-      <h3 className="mt-4 text-xl font-semibold tracking-[-0.03em] text-[#0d2430] pr-10">
-        {item.title}
-      </h3>
-      <p className="mt-2.5 text-sm leading-6 text-[#466372]">{item.description}</p>
-
-      <div className="mt-5">
-        <div className="flex items-center justify-between text-xs mb-1.5">
-          <span className="text-[#466372]">Встречается в звонках</span>
-          <span className="font-semibold text-[#0d2430]">{item.frequency}%</span>
-        </div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
-          <div
-            className="h-full rounded-full bg-slate-400"
-            style={{ width: `${item.frequency}%` }}
-          />
-        </div>
-      </div>
-
-      <div className="mt-5 flex items-center justify-between">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-600">
-          <TrendingUp className="size-3" />
-          {item.impactLabel}
-        </span>
-        <Link
-          to="/calls"
-          className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
-        >
-          Примеры ({item.callsCount})
-          <ChevronRight className="size-3.5" />
-        </Link>
-      </div>
-    </motion.article>
-  )
+const impactColors = {
+  high: 'bg-rose-100 text-rose-700 ring-rose-200',
+  medium: 'bg-amber-100 text-amber-700 ring-amber-200',
+  low: 'bg-slate-100 text-slate-600 ring-slate-200',
 }
-
-function SpeechTemplateCard({ item, index }: { item: typeof speechTemplates[0]; index: number }) {
-  return (
-    <motion.article
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: 'easeOut', delay: 0.1 + index * 0.07 }}
-      className="rounded-[1.75rem] bg-white p-7 shadow-[var(--shadow-soft)] ring-1 ring-[var(--line-soft)]"
-    >
-      <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-        Навык
-      </p>
-      <h3 className="mt-2 text-lg font-semibold tracking-[-0.03em] text-[#0d2430]">{item.skill}</h3>
-
-      <div className="mt-5 space-y-3">
-        <div className="rounded-xl border-l-4 border-rose-400 bg-rose-50 p-4">
-          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-rose-600">
-            Как не надо
-          </p>
-          <p className="text-sm italic leading-6 text-[#466372]">«{item.before}»</p>
-        </div>
-
-        <div className="flex items-center justify-center gap-2 text-[11px] font-medium text-slate-400">
-          <div className="h-px flex-1 bg-slate-100" />
-          замените на
-          <div className="h-px flex-1 bg-slate-100" />
-        </div>
-
-        <div className="rounded-xl border-l-4 border-emerald-400 bg-emerald-50 p-4">
-          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-600">
-            Как надо
-          </p>
-          <p className="text-sm font-medium leading-6 text-[#0d2430]">«{item.after}»</p>
-        </div>
-      </div>
-
-      <div className="mt-4 rounded-xl bg-slate-50 px-4 py-3">
-        <p className="text-xs leading-5 text-[#466372]">
-          <span className="font-semibold text-[#0d2430]">Почему это работает: </span>
-          {item.why}
-        </p>
-      </div>
-    </motion.article>
-  )
-}
-
-function OperatorCoachingCard({ op, index }: { op: typeof operatorProfiles[0]; index: number }) {
-  return (
-    <motion.article
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: 'easeOut', delay: 0.1 + index * 0.08 }}
-      className={[
-        'rounded-[1.75rem] p-7 ring-1',
-        op.priority
-          ? 'bg-amber-50/60 ring-amber-200/70 shadow-[0_8px_32px_rgba(246,198,103,0.12)]'
-          : 'bg-white shadow-[var(--shadow-soft)] ring-[var(--line-soft)]',
-      ].join(' ')}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-cyan-100 text-base font-bold text-cyan-700">
-            {op.name[0]}
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <p className="font-semibold text-[#0d2430]">{op.name}</p>
-              {op.priority && (
-                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-amber-700">
-                  Фокус
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-[#5b7280]">{op.callsHandled} звонков · риск {op.riskShare}</p>
-          </div>
-        </div>
-        <div className="rounded-full bg-slate-100 px-3 py-1.5 text-sm font-bold text-[#0d2430]">
-          {op.avgScore}
-          <span className="ml-0.5 text-xs font-normal text-slate-400">/100</span>
-        </div>
-      </div>
-
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        <div>
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-600">
-            Сильные стороны
-          </p>
-          <ul className="space-y-1.5">
-            {op.strengths.map((s) => (
-              <li key={s} className="flex items-start gap-2 text-xs leading-5 text-[#466372]">
-                <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-500" />
-                {s}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div>
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-amber-600">
-            Точки роста
-          </p>
-          <ul className="space-y-1.5">
-            {op.growthPoints.map((g) => (
-              <li key={g.label} className="text-xs leading-5">
-                <span className="font-medium text-[#0d2430]">{g.label}</span>
-                <span className="text-[#5b7280]"> — {g.note}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      <Link
-        to="/calls"
-        className="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-700 hover:text-cyan-900 transition-colors"
-      >
-        Звонки {op.name} ({op.callsHandled})
-        <ArrowRight className="size-3.5" />
-      </Link>
-    </motion.article>
-  )
-}
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
+const impactLabels = { high: 'Высокий', medium: 'Средний', low: 'Низкий' }
 
 export function CoachingPage() {
   const [checked, setChecked] = useState<Set<string>>(new Set())
 
-  const toggle = (id: string) =>
-    setChecked((prev) => {
+  function toggle(id: string) {
+    setChecked(prev => {
       const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
       return next
     })
+  }
+
+  const categories = [...new Set(weeklyChecklist.map(i => i.category))]
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, ease: 'easeOut' }}
-      className="space-y-10"
-    >
-      {/* Hero */}
-      <div className="rounded-[2rem] bg-white p-8 shadow-[var(--shadow-soft)] ring-1 ring-[var(--line-soft)]">
-        <div className="inline-flex items-center gap-2 rounded-full bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-cyan-800">
-          <BookOpen className="size-3.5" />
-          Coaching Summary
-        </div>
-        <h1 className="mt-5 max-w-3xl text-4xl font-semibold leading-tight tracking-[-0.04em] text-[#0d2430] md:text-5xl">
-          3 направления обучения с наибольшим влиянием на запись пациентов
-        </h1>
-        <p className="mt-4 max-w-2xl text-lg leading-8 text-[#466372]">
-          Сформировано на основе анализа 58 звонков за 2 недели. Каждая рекомендация подкреплена реальными цитатами из разговоров.
-        </p>
+    <motion.section {...fade()} className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[#0d2430]">Коучинг</h1>
+        <p className="mt-1 text-sm text-[#5b7280]">AI-рекомендации для руководителя · неделя 21–27 апр</p>
       </div>
 
-      {/* Coaching Priorities */}
-      <section>
-        <div className="mb-5">
-          <p className="text-[11px] font-bold uppercase tracking-[0.26em] text-slate-400">
-            Приоритеты обучения
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-[#0d2430]">
-            Где исправление даст максимальный эффект
-          </h2>
+      {/* Priorities */}
+      <motion.div {...fade(0.06)}>
+        <div className="mb-4 flex items-center gap-2">
+          <Target className="size-4 text-cyan-600" />
+          <h2 className="text-base font-semibold text-[#16323f]">Приоритеты обучения</h2>
         </div>
-        <div className="grid gap-5 md:grid-cols-3">
-          {coachingPriorities.map((item, i) => (
-            <CoachingPriorityCard key={item.id} item={item} index={i} />
+        <div className="grid gap-4 lg:grid-cols-3">
+          {coachingPriorities.map((p, i) => (
+            <div
+              key={p.id}
+              className="rounded-[1.75rem] bg-white p-5 shadow-[var(--shadow-card)] ring-1 ring-[var(--line-soft)]"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex size-8 items-center justify-center rounded-full bg-cyan-100 text-sm font-bold text-cyan-700">
+                  {i + 1}
+                </div>
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ${impactColors[p.impact]}`}>
+                  {impactLabels[p.impact]} impact
+                </span>
+              </div>
+
+              <h3 className="mt-4 text-sm font-semibold leading-snug text-[#0d2430]">{p.title}</h3>
+              <p className="mt-2 text-xs leading-5 text-[#5b7280]">{p.description}</p>
+
+              {/* Progress bar */}
+              <div className="mt-4">
+                <div className="flex items-center justify-between text-xs text-[#5b7280] mb-1.5">
+                  <span>Частота ошибки</span>
+                  <span className="font-bold text-rose-700">{p.progress}%</span>
+                </div>
+                <div className="h-2 rounded-full bg-[#eaf4f6] overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-rose-400 to-rose-500 transition-all"
+                    style={{ width: `${p.progress}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <p className="text-xs font-semibold text-[#5b7280] mb-2">Операторы:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {p.operators.map(op => (
+                    <span key={op} className="rounded-full bg-[#eaf4f6] px-2.5 py-0.5 text-xs font-medium text-[#16323f]">
+                      {op.split(' ')[0]}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
           ))}
         </div>
-      </section>
+      </motion.div>
 
       {/* Speech Templates */}
-      <section>
-        <div className="mb-5">
-          <p className="text-[11px] font-bold uppercase tracking-[0.26em] text-slate-400">
-            Речевые шаблоны
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-[#0d2430]">
-            Конкретные формулировки для команды
-          </h2>
+      <motion.div {...fade(0.12)}>
+        <div className="mb-4 flex items-center gap-2">
+          <Zap className="size-4 text-amber-500" />
+          <h2 className="text-base font-semibold text-[#16323f]">Речевые шаблоны</h2>
         </div>
-        <div className="grid gap-5 md:grid-cols-3">
-          {speechTemplates.map((item, i) => (
-            <SpeechTemplateCard key={item.id} item={item} index={i} />
+        <div className="grid gap-4 lg:grid-cols-2">
+          {speechTemplates.map((t) => (
+            <div
+              key={t.id}
+              className="rounded-[1.75rem] bg-white p-6 shadow-[var(--shadow-card)] ring-1 ring-[var(--line-soft)]"
+            >
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
+                <span>Ситуация:</span>
+                <span>{t.situation}</span>
+              </div>
+
+              <div className="mt-5 grid gap-3 grid-cols-2">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-rose-600 mb-2">До</p>
+                  <div className="rounded-xl bg-rose-50 p-3 ring-1 ring-rose-200">
+                    <p className="text-xs italic leading-5 text-[#5b7280]">{t.before}</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600 mb-2">После</p>
+                  <div className="rounded-xl bg-emerald-50 p-3 ring-1 ring-emerald-200">
+                    <p className="text-xs italic leading-5 text-[#16323f]">{t.after}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-center gap-2 rounded-xl bg-cyan-50 px-3 py-2">
+                <ArrowRight className="size-3.5 text-cyan-600 shrink-0" />
+                <p className="text-xs font-semibold text-cyan-700">{t.improvement}</p>
+              </div>
+            </div>
           ))}
         </div>
-      </section>
+      </motion.div>
 
       {/* Operator Profiles */}
-      <section>
-        <div className="mb-5">
-          <p className="text-[11px] font-bold uppercase tracking-[0.26em] text-slate-400">
-            Профили операторов
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-[#0d2430]">
-            На кого направить коучинг в первую очередь
-          </h2>
+      <motion.div {...fade(0.18)}>
+        <div className="mb-4 flex items-center gap-2">
+          <TrendingDown className="size-4 text-rose-500" />
+          <h2 className="text-base font-semibold text-[#16323f]">Профили операторов — фокус недели</h2>
         </div>
-        <div className="grid gap-5 md:grid-cols-2">
-          {operatorProfiles.map((op, i) => (
-            <OperatorCoachingCard key={op.id} op={op} index={i} />
+        <div className="grid gap-4 lg:grid-cols-2">
+          {operatorProfiles.map((op) => (
+            <div
+              key={op.id}
+              className="rounded-[1.75rem] bg-white p-6 shadow-[var(--shadow-card)] ring-1 ring-[var(--line-soft)]"
+            >
+              <div className="flex items-center gap-4">
+                <div className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-cyan-600 text-sm font-bold text-white shadow-lg shadow-cyan-500/25">
+                  {op.avatar}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-[#0d2430]">{op.name}</h3>
+                  <p className="text-xs text-[#5b7280]">{op.calls} звонков за месяц</p>
+                </div>
+                <div className="ml-auto text-right">
+                  <p className="text-2xl font-bold text-rose-600">{op.score}</p>
+                  <p className="text-xs text-[#5b7280]">средний балл</p>
+                </div>
+              </div>
+
+              {/* Score bar */}
+              <div className="mt-4 h-2 rounded-full bg-[#eaf4f6] overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-rose-400 to-amber-400"
+                  style={{ width: `${op.score}%` }}
+                />
+              </div>
+
+              <div className="mt-5 grid gap-4 grid-cols-2">
+                <div>
+                  <p className="text-xs font-semibold text-emerald-700 mb-2">Сильные стороны</p>
+                  <ul className="space-y-1">
+                    {op.strengths.map(s => (
+                      <li key={s} className="flex items-center gap-1.5 text-xs text-[#16323f]">
+                        <span className="size-1.5 rounded-full bg-emerald-400 shrink-0" />
+                        {s}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-rose-700 mb-2">Точки роста</p>
+                  <ul className="space-y-1">
+                    {op.growthPoints.map(g => (
+                      <li key={g} className="flex items-start gap-1.5 text-xs text-[#16323f]">
+                        <span className="size-1.5 rounded-full bg-rose-400 shrink-0 mt-1" />
+                        {g}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
-      </section>
+      </motion.div>
 
       {/* Weekly Checklist */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: 'easeOut', delay: 0.2 }}
-        className="rounded-[2rem] bg-[linear-gradient(135deg,rgba(31,183,201,0.07),rgba(107,198,255,0.04))] p-8 ring-1 ring-cyan-200/50"
-      >
-        <div className="flex flex-wrap items-start justify-between gap-6">
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <CheckSquare className="size-5 text-cyan-600" />
-              <p className="text-[11px] font-bold uppercase tracking-[0.26em] text-cyan-700">
-                Чеклист на неделю
-              </p>
+      <motion.div {...fade(0.24)}>
+        <div className="rounded-[2rem] bg-white p-6 shadow-[var(--shadow-soft)] ring-1 ring-[var(--line-soft)]">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#5b7280]">Чеклист</p>
+              <h2 className="mt-1 text-lg font-semibold text-[#0d2430]">Задачи на неделю</h2>
             </div>
-            <h2 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-[#0d2430]">
-              Что проверить через 7 дней
-            </h2>
-            <p className="mt-2 text-sm text-[#466372]">
-              Отметьте пункты после выполнения — так вы отследите прогресс относительно базовых метрик.
-            </p>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-cyan-700">{checked.size}/{weeklyChecklist.length}</p>
+              <p className="text-xs text-[#5b7280]">выполнено</p>
+            </div>
+          </div>
 
-            <ul className="mt-6 space-y-3">
-              {weeklyChecklist.map((item) => {
-                const done = checked.has(item.id)
-                return (
-                  <li key={item.id}>
+          {/* Progress */}
+          <div className="mb-6 h-2 rounded-full bg-[#eaf4f6] overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-emerald-400 transition-all duration-500"
+              style={{ width: `${(checked.size / weeklyChecklist.length) * 100}%` }}
+            />
+          </div>
+
+          <div className="space-y-6">
+            {categories.map(cat => (
+              <div key={cat}>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#5b7280]">{cat}</p>
+                <div className="space-y-2">
+                  {weeklyChecklist.filter(i => i.category === cat).map(item => (
                     <button
-                      type="button"
+                      key={item.id}
                       onClick={() => toggle(item.id)}
-                      className="flex w-full items-start gap-3 rounded-xl px-4 py-3 text-left text-sm leading-6 transition-colors hover:bg-white/60"
+                      className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left ring-1 transition-all hover:-translate-y-0.5"
+                      style={{
+                        backgroundColor: checked.has(item.id) ? 'rgba(127,227,197,0.12)' : 'white',
+                        borderColor: checked.has(item.id) ? 'rgba(127,227,197,0.5)' : 'rgba(22,50,63,0.08)',
+                      }}
                     >
-                      {done ? (
-                        <CheckSquare className="mt-0.5 size-4.5 shrink-0 text-cyan-600" />
-                      ) : (
-                        <Square className="mt-0.5 size-4.5 shrink-0 text-slate-300" />
-                      )}
-                      <span className={done ? 'text-[#5b7280] line-through' : 'text-[#0d2430]'}>
+                      {checked.has(item.id)
+                        ? <CheckSquare className="size-5 text-emerald-500 shrink-0" />
+                        : <Square className="size-5 text-[#5b7280] shrink-0" />
+                      }
+                      <span className={`text-sm ${checked.has(item.id) ? 'text-[#5b7280] line-through' : 'text-[#16323f] font-medium'}`}>
                         {item.text}
                       </span>
                     </button>
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-
-          <div className="w-full md:w-auto">
-            <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">
-              Базовые метрики
-            </p>
-            <div className="flex flex-wrap gap-3 md:flex-col">
-              {baselineMetrics.map((m) => (
-                <div
-                  key={m.label}
-                  className="rounded-2xl bg-white/70 px-5 py-3 ring-1 ring-cyan-200/60"
-                >
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                    {m.label}
-                  </p>
-                  <p className="mt-1 text-xl font-bold text-[#0d2430]">{m.value}</p>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
-      </motion.section>
-
-      {/* CTA to Calls */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-[2rem] bg-white p-6 shadow-[var(--shadow-soft)] ring-1 ring-[var(--line-soft)]">
-        <div className="flex items-center gap-3">
-          <User className="size-5 text-cyan-600" />
-          <p className="text-sm font-medium text-[#466372]">
-            Хотите найти примеры звонков по конкретному паттерну?
-          </p>
-        </div>
-        <Link
-          to="/calls"
-          className="inline-flex items-center gap-2 rounded-full bg-cyan-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 hover:bg-cyan-700 transition-colors"
-        >
-          Перейти к разбору звонков
-          <ArrowRight className="size-4" />
-        </Link>
-      </div>
+      </motion.div>
     </motion.section>
   )
 }

@@ -1,10 +1,9 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-
 import { AppShell } from './components/AppShell'
-import { CallDetailPage } from './pages/CallDetailPage'
-import { CallsListPage } from './pages/CallsListPage'
-import { CoachingPage } from './pages/CoachingPage'
 import { ExecutiveSummaryPage } from './pages/ExecutiveSummaryPage'
+import { CallsListPage } from './pages/CallsListPage'
+import { CallDetailPage } from './pages/CallDetailPage'
+import { CoachingPage } from './pages/CoachingPage'
 
 function App() {
   return (

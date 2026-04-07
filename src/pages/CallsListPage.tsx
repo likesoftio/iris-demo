@@ -1,223 +1,188 @@
-import { useMemo, useState } from 'react'
-import { AlertTriangle, ArrowUpRight, Filter, ShieldAlert } from 'lucide-react'
+import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
+import { Search, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { callsData, type CallRecord, type Outcome } from '../data/demoData'
 
-import { demoData } from '../data/demoData'
+type SortKey = keyof Pick<CallRecord, 'date' | 'operator' | 'durationSec' | 'score' | 'outcome'>
+type SortDir = 'asc' | 'desc'
+
+const outcomeColors: Record<Outcome, string> = {
+  'Записался': 'bg-emerald-100 text-emerald-800 ring-emerald-200',
+  'Отказ': 'bg-rose-100 text-rose-800 ring-rose-200',
+  'Перезвонить': 'bg-amber-100 text-amber-800 ring-amber-200',
+  'Переведён': 'bg-sky-100 text-sky-800 ring-sky-200',
+}
+
+const errorTypes = ['Все', 'Не предложила альтернативу', 'Затянутый диалог', 'Не выявила потребность', 'Грубость в голосе']
+const periods = ['Все', 'Сегодня', '7 дней', '30 дней']
+const scoreRanges = ['Все', '0–50', '51–70', '71–100']
+
+function ScoreBadge({ score }: { score: number }) {
+  const cls = score >= 75
+    ? 'bg-emerald-100 text-emerald-800 ring-emerald-200'
+    : score >= 55
+      ? 'bg-amber-100 text-amber-800 ring-amber-200'
+      : 'bg-rose-100 text-rose-800 ring-rose-200'
+  return (
+    <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-bold ring-1 ${cls}`}>
+      {score}
+    </span>
+  )
+}
+
+function SortIcon({ col, sortKey, dir }: { col: SortKey; sortKey: SortKey; dir: SortDir }) {
+  if (col !== sortKey) return <ChevronsUpDown className="size-3 opacity-30" />
+  return dir === 'asc' ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />
+}
 
 export function CallsListPage() {
-  const [activeFilter, setActiveFilter] = useState<'all' | 'high-risk'>('all')
-  const [selectedOperatorId, setSelectedOperatorId] = useState<'all' | string>('all')
+  const [query, setQuery] = useState('')
+  const [period, setPeriod] = useState('Все')
+  const [errorType, setErrorType] = useState('Все')
+  const [scoreRange, setScoreRange] = useState('Все')
+  const [sortKey, setSortKey] = useState<SortKey>('date')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
 
-  const selectedOperator =
-    selectedOperatorId === 'all'
-      ? null
-      : demoData.operatorStats.find((operator) => operator.id === selectedOperatorId) ?? null
+  const filtered = useMemo(() => {
+    let data = callsData.filter((c) => {
+      if (query && !c.operator.toLowerCase().includes(query.toLowerCase()) && !c.id.includes(query)) return false
+      if (errorType !== 'Все' && c.errorType !== errorType) return false
+      if (scoreRange === '0–50' && c.score > 50) return false
+      if (scoreRange === '51–70' && (c.score < 51 || c.score > 70)) return false
+      if (scoreRange === '71–100' && c.score < 71) return false
+      return true
+    })
 
-  const filteredCalls = useMemo(() => {
-    let nextCalls = demoData.callListItems
+    data = [...data].sort((a, b) => {
+      let av: string | number = a[sortKey]
+      let bv: string | number = b[sortKey]
+      if (typeof av === 'string') av = av.toLowerCase()
+      if (typeof bv === 'string') bv = bv.toLowerCase()
+      return sortDir === 'asc' ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1)
+    })
 
-    if (activeFilter === 'high-risk') {
-      nextCalls = nextCalls.filter((call) => call.riskLevel === 'high')
-    }
+    return data
+  }, [query, period, errorType, scoreRange, sortKey, sortDir])
 
-    if (selectedOperatorId !== 'all') {
-      nextCalls = nextCalls.filter((call) => call.operatorId === selectedOperatorId)
-    }
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortKey(key); setSortDir('desc') }
+  }
 
-    return nextCalls
-  }, [activeFilter, selectedOperatorId])
+  const cols: { key: SortKey; label: string }[] = [
+    { key: 'date', label: 'Дата/Время' },
+    { key: 'operator', label: 'Оператор' },
+    { key: 'durationSec', label: 'Длина' },
+    { key: 'score', label: 'Балл' },
+    { key: 'outcome', label: 'Исход' },
+  ]
 
   return (
     <motion.section
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: 'easeOut' }}
-      className="space-y-6"
+      transition={{ duration: 0.45, ease: 'easeOut' as const }}
+      className="space-y-5"
     >
-      <div className="flex flex-col gap-4 rounded-[2rem] bg-white p-8 shadow-[var(--shadow-soft)] ring-1 ring-[var(--line-soft)]">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-              Call review flow
-            </p>
-            <h1 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[#0d2430]">
-              Разбор звонков с быстрым фокусом на риски
-            </h1>
-            <p className="mt-3 max-w-3xl text-base leading-7 text-[#496674]">
-              Отфильтруйте проблемные кейсы, откройте звонок и перейдите к
-              доказательным цитатам, breakdown и конкретному next step.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="inline-flex rounded-full bg-slate-100 p-1">
-              <button
-                type="button"
-                onClick={() => setActiveFilter('all')}
-                className={`rounded-full px-4 py-2 text-sm font-medium ${
-                  activeFilter === 'all'
-                    ? 'bg-white text-[#0d2430] shadow-sm'
-                    : 'text-[#56717f]'
-                }`}
-              >
-                All calls
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveFilter('high-risk')}
-                className={`rounded-full px-4 py-2 text-sm font-medium ${
-                  activeFilter === 'high-risk'
-                    ? 'bg-rose-500 text-white shadow-sm'
-                    : 'text-[#56717f]'
-                }`}
-              >
-                High risk
-              </button>
-            </div>
-
-            <label className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 text-sm font-medium text-[#456170]">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Operator filter
-              </span>
-              <select
-                aria-label="Operator filter"
-                value={selectedOperatorId}
-                onChange={(event) => setSelectedOperatorId(event.target.value)}
-                className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-[#0d2430] outline-none"
-              >
-                <option value="all">Все операторы</option>
-                {demoData.operatorStats.map((operator) => (
-                  <option key={operator.id} value={operator.id}>
-                    {operator.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-        </div>
-
-        <div className="grid gap-3 md:grid-cols-3">
-          {demoData.operatorStats.slice(0, 3).map((operator) => (
-            <div
-              key={operator.id}
-              className="rounded-[1.4rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(234,244,246,0.92))] p-4 ring-1 ring-slate-200/80"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-base font-semibold text-[#0d2430]">{operator.name}</p>
-                  <p className="text-sm text-slate-500">{operator.callsHandled} звонков</p>
-                </div>
-                <span className="rounded-full bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-900">
-                  {operator.bookedRate}
-                </span>
-              </div>
-
-              <p className="mt-4 text-sm leading-6 text-[#496674]">
-                {operator.strengthLabel}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap gap-3">
-          <div className="inline-flex items-center gap-2 rounded-full bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-900">
-            <Filter className="size-4" />
-            {filteredCalls.length} звонков в текущем срезе
-          </div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-rose-500/10 px-4 py-2 text-sm font-medium text-rose-900">
-            <ShieldAlert className="size-4" />
-            Показываем проблемные кейсы через outcome и risk markers
-          </div>
-          {selectedOperator ? (
-            <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-700 ring-1 ring-slate-200">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Активный оператор
-              </span>
-              <span className="font-semibold text-[#0d2430]">
-                {selectedOperator.name}
-              </span>
-            </div>
-          ) : null}
-        </div>
+      <div>
+        <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[#0d2430]">Звонки</h1>
+        <p className="mt-1 text-sm text-[#5b7280]">{callsData.length} записей · апрель 2026</p>
       </div>
 
-      {filteredCalls.length === 0 ? (
-        <div className="rounded-[1.75rem] bg-white/96 p-8 text-center shadow-sm ring-1 ring-[var(--line-soft)]">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-            Empty state
-          </p>
-          <h2 className="mt-4 text-2xl font-semibold tracking-[-0.03em] text-[#0d2430]">
-            В этом срезе пока нет звонков
-          </h2>
-          <p className="mt-3 text-sm leading-7 text-[#496674]">
-            Попробуйте сбросить risk-фильтр или выбрать другого оператора, чтобы
-            вернуться к активным кейсам.
-          </p>
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#5b7280]" />
+          <input
+            type="text"
+            placeholder="Поиск по оператору, ID..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-9 rounded-xl border border-[var(--line-soft)] bg-white pl-9 pr-4 text-sm text-[#16323f] placeholder-[#5b7280] outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+          />
         </div>
-      ) : null}
 
-      <div className="grid gap-4">
-        {filteredCalls.map((call) => (
-          <motion.article
-            key={call.id}
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.28, ease: 'easeOut' }}
-            className="group rounded-[1.75rem] bg-white/95 p-5 shadow-sm ring-1 ring-[var(--line-soft)] transition-transform hover:-translate-y-0.5"
-          >
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                    {call.id}
-                  </span>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                      call.riskLabel === 'Высокий риск'
-                        ? 'bg-rose-500/12 text-rose-900'
-                        : call.riskLabel === 'Средний риск'
-                          ? 'bg-amber-300/20 text-amber-950'
-                          : 'bg-emerald-400/14 text-emerald-950'
-                    }`}
-                  >
-                    {call.riskLabel}
-                  </span>
-                  <span className="rounded-full bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-900">
-                    Score {call.score}
-                  </span>
-                </div>
-
-                <div>
-                  <h2 className="text-2xl font-semibold tracking-[-0.03em] text-[#0d2430]">
-                    {call.title}
-                  </h2>
-                  <p className="mt-2 text-sm font-medium text-[#58727f]">
-                    {call.patientName} · {call.intent}
-                  </p>
-                </div>
-
-                <p className="max-w-3xl text-sm leading-7 text-[#496674]">
-                  {call.summary}
-                </p>
-              </div>
-
-              <div className="flex min-w-[12rem] flex-col items-start gap-3 rounded-[1.4rem] bg-slate-50 p-4 ring-1 ring-slate-200">
-                <div className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
-                  <AlertTriangle className="size-4 text-amber-500" />
-                  {call.statusLabel}
-                </div>
-                <Link
-                  to={`/calls/${call.id}`}
-                  className="inline-flex items-center gap-2 rounded-full bg-cyan-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 transition-transform group-hover:-translate-y-0.5"
-                >
-                  Открыть звонок
-                  <ArrowUpRight className="size-4" />
-                </Link>
-              </div>
-            </div>
-          </motion.article>
+        {[
+          { label: 'Период', value: period, setValue: setPeriod, options: periods },
+          { label: 'Тип ошибки', value: errorType, setValue: setErrorType, options: errorTypes },
+          { label: 'Балл', value: scoreRange, setValue: setScoreRange, options: scoreRanges },
+        ].map(({ label, value, setValue, options }) => (
+          <div key={label} className="flex items-center gap-2">
+            <label className="text-xs font-semibold text-[#5b7280]">{label}:</label>
+            <select
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              className="h-9 rounded-xl border border-[var(--line-soft)] bg-white px-3 text-sm text-[#16323f] outline-none focus:border-cyan-400"
+            >
+              {options.map(o => <option key={o}>{o}</option>)}
+            </select>
+          </div>
         ))}
+
+        <span className="ml-auto text-xs text-[#5b7280]">{filtered.length} из {callsData.length}</span>
+      </div>
+
+      {/* Table */}
+      <div className="rounded-[2rem] bg-white shadow-[var(--shadow-soft)] ring-1 ring-[var(--line-soft)] overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[var(--line-soft)] bg-[#f7fbfc]">
+                <th className="pl-6 py-3.5 text-left text-xs font-semibold uppercase tracking-[0.18em] text-[#5b7280] w-8">#</th>
+                {cols.map(({ key, label }) => (
+                  <th
+                    key={key}
+                    onClick={() => toggleSort(key)}
+                    className="py-3.5 pr-6 text-left text-xs font-semibold uppercase tracking-[0.18em] text-[#5b7280] cursor-pointer hover:text-cyan-700 select-none"
+                  >
+                    <span className="flex items-center gap-1">
+                      {label}
+                      <SortIcon col={key} sortKey={sortKey} dir={sortDir} />
+                    </span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--line-soft)]">
+              {filtered.map((call, i) => (
+                <tr
+                  key={call.id}
+                  className="hover:bg-cyan-50/40 cursor-pointer transition-colors"
+                >
+                  <td className="pl-6 py-3.5 text-xs text-[#5b7280]">{i + 1}</td>
+                  <td className="py-3.5 pr-6">
+                    <div className="text-[#16323f] font-medium">{call.date}</div>
+                    <div className="text-xs text-[#5b7280]">ID: {call.id}</div>
+                  </td>
+                  <td className="py-3.5 pr-6">
+                    <Link to={`/calls/${call.id}`} className="font-medium text-cyan-700 hover:underline">
+                      {call.operator}
+                    </Link>
+                    {call.errorType && (
+                      <div className="mt-0.5 text-xs text-rose-600">{call.errorType}</div>
+                    )}
+                  </td>
+                  <td className="py-3.5 pr-6 text-[#5b7280]">{call.duration}</td>
+                  <td className="py-3.5 pr-6">
+                    <ScoreBadge score={call.score} />
+                  </td>
+                  <td className="py-3.5 pr-6">
+                    <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ${outcomeColors[call.outcome]}`}>
+                      {call.outcome}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {filtered.length === 0 && (
+            <div className="py-16 text-center text-[#5b7280]">
+              <p className="text-sm">Нет звонков по заданным фильтрам</p>
+            </div>
+          )}
+        </div>
       </div>
     </motion.section>
   )

@@ -32,14 +32,21 @@ jobs:
 
       - run: npm run build
 
-      - name: Copy index.html to 404.html for SPA routing
-        run: cp dist/index.html dist/404.html
+      - name: Assemble Pages layout
+        run: |
+          mkdir -p pages/app
+          # React SPA goes into /app/ subdirectory
+          cp -r dist/* pages/app/
+          # SPA 404 fallback for client-side routing
+          cp dist/index.html pages/app/404.html
+          # Landing page served at repo root
+          cp landing.html pages/index.html
 
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: pages
 
       - uses: actions/deploy-pages@v4
         id: deployment

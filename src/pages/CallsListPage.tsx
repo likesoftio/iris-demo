@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
-import { motion } from 'framer-motion'
-import { Search, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Search, ChevronUp, ChevronDown, ChevronsUpDown, SlidersHorizontal, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { callsData, type CallRecord, type Outcome } from '../data/demoData'
 
@@ -43,6 +43,9 @@ export function CallsListPage() {
   const [scoreRange, setScoreRange] = useState('Все')
   const [sortKey, setSortKey] = useState<SortKey>('date')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
+  const [filtersOpen, setFiltersOpen] = useState(false)
+
+  const activeFilterCount = [period, errorType, scoreRange].filter(v => v !== 'Все').length
 
   const filtered = useMemo(() => {
     let data = callsData.filter((c) => {
@@ -91,36 +94,125 @@ export function CallsListPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#5b7280]" />
-          <input
-            type="text"
-            placeholder="Поиск по оператору, ID..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="h-9 rounded-xl border border-[var(--line-soft)] bg-white pl-9 pr-4 text-sm text-[#16323f] placeholder-[#5b7280] outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
-          />
+      <div className="space-y-3">
+        {/* Mobile: search + filter toggle button */}
+        <div className="flex gap-2 sm:hidden">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#5b7280]" />
+            <input
+              type="text"
+              placeholder="Поиск по оператору, ID..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="h-10 w-full rounded-xl border border-[var(--line-soft)] bg-white pl-9 pr-4 text-sm text-[#16323f] placeholder-[#5b7280] outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+            />
+          </div>
+          <button
+            onClick={() => setFiltersOpen(o => !o)}
+            className={[
+              'relative flex h-10 items-center gap-2 rounded-xl border px-3.5 text-sm font-semibold transition-all',
+              filtersOpen || activeFilterCount > 0
+                ? 'border-cyan-400 bg-cyan-50 text-cyan-700'
+                : 'border-[var(--line-soft)] bg-white text-[#5b7280]',
+            ].join(' ')}
+          >
+            <SlidersHorizontal className="size-4" />
+            <span>Фильтры</span>
+            {activeFilterCount > 0 && (
+              <span className="flex size-5 items-center justify-center rounded-full bg-cyan-600 text-[10px] font-bold text-white">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
         </div>
 
-        {[
-          { label: 'Период', value: period, setValue: setPeriod, options: periods },
-          { label: 'Тип ошибки', value: errorType, setValue: setErrorType, options: errorTypes },
-          { label: 'Балл', value: scoreRange, setValue: setScoreRange, options: scoreRanges },
-        ].map(({ label, value, setValue, options }) => (
-          <div key={label} className="flex items-center gap-2">
-            <label className="text-xs font-semibold text-[#5b7280]">{label}:</label>
-            <select
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              className="h-9 rounded-xl border border-[var(--line-soft)] bg-white px-3 text-sm text-[#16323f] outline-none focus:border-cyan-400"
+        {/* Mobile: collapsible filter panel */}
+        <AnimatePresence>
+          {filtersOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.22, ease: 'easeOut' }}
+              className="overflow-hidden sm:hidden"
             >
-              {options.map(o => <option key={o}>{o}</option>)}
-            </select>
-          </div>
-        ))}
+              <div className="grid grid-cols-3 gap-2 rounded-2xl border border-[var(--line-soft)] bg-white p-3 shadow-[var(--shadow-card)]">
+                {[
+                  { label: 'Период', value: period, setValue: setPeriod, options: periods },
+                  { label: 'Тип ошибки', value: errorType, setValue: setErrorType, options: errorTypes },
+                  { label: 'Балл', value: scoreRange, setValue: setScoreRange, options: scoreRanges },
+                ].map(({ label, value, setValue, options }) => (
+                  <div key={label} className="flex flex-col gap-1">
+                    <label className="text-[10px] font-semibold uppercase tracking-wide text-[#5b7280]">{label}</label>
+                    <select
+                      value={value}
+                      onChange={(e) => setValue(e.target.value)}
+                      className="h-9 rounded-lg border border-[var(--line-soft)] bg-[#f7fbfc] px-2 text-xs text-[#16323f] outline-none focus:border-cyan-400"
+                    >
+                      {options.map(o => <option key={o}>{o}</option>)}
+                    </select>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        <span className="ml-auto text-xs text-[#5b7280]">{filtered.length} из {callsData.length}</span>
+        {/* Mobile: active filter chips */}
+        {activeFilterCount > 0 && (
+          <div className="flex flex-wrap gap-2 sm:hidden">
+            {[
+              { label: 'Период', value: period, setValue: setPeriod },
+              { label: 'Тип ошибки', value: errorType, setValue: setErrorType },
+              { label: 'Балл', value: scoreRange, setValue: setScoreRange },
+            ].filter(f => f.value !== 'Все').map(({ label, value, setValue }) => (
+              <span key={label} className="flex items-center gap-1.5 rounded-full border border-cyan-200 bg-cyan-50 pl-3 pr-2 py-1 text-xs font-semibold text-cyan-800">
+                {label}: {value}
+                <button onClick={() => setValue('Все')} className="flex size-4 items-center justify-center rounded-full hover:bg-cyan-200">
+                  <X className="size-2.5" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Desktop: original horizontal filter row */}
+        <div className="hidden sm:flex flex-wrap items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#5b7280]" />
+            <input
+              type="text"
+              placeholder="Поиск по оператору, ID..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="h-9 rounded-xl border border-[var(--line-soft)] bg-white pl-9 pr-4 text-sm text-[#16323f] placeholder-[#5b7280] outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+            />
+          </div>
+
+          {[
+            { label: 'Период', value: period, setValue: setPeriod, options: periods },
+            { label: 'Тип ошибки', value: errorType, setValue: setErrorType, options: errorTypes },
+            { label: 'Балл', value: scoreRange, setValue: setScoreRange, options: scoreRanges },
+          ].map(({ label, value, setValue, options }) => (
+            <div key={label} className="flex items-center gap-2">
+              <label className="text-xs font-semibold text-[#5b7280]">{label}:</label>
+              <select
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                className="h-9 rounded-xl border border-[var(--line-soft)] bg-white px-3 text-sm text-[#16323f] outline-none focus:border-cyan-400"
+              >
+                {options.map(o => <option key={o}>{o}</option>)}
+              </select>
+            </div>
+          ))}
+
+          <span className="ml-auto text-xs text-[#5b7280]">{filtered.length} из {callsData.length}</span>
+        </div>
+
+        {/* Mobile: result count */}
+        <div className="flex items-center justify-between sm:hidden">
+          <span className="text-xs text-[#5b7280]">{filtered.length} из {callsData.length} звонков</span>
+        </div>
       </div>
 
       {/* Table */}

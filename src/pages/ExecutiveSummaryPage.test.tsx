@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 
 import { ExecutiveSummaryPage } from './ExecutiveSummaryPage'
 
-test('renders hero insight, key metrics, and top loss categories', () => {
+test('renders hero heading, key metrics, and operator table', () => {
   render(
     <MemoryRouter>
       <ExecutiveSummaryPage />
@@ -12,28 +12,17 @@ test('renders hero insight, key metrics, and top loss categories', () => {
 
   expect(
     screen.getByRole('heading', {
-      name: /где клиника теряет пациентов и сколько это стоит/i,
+      name: /клиника теряет ₽1\.2 млн/i,
     }),
   ).toBeInTheDocument()
 
-  expect(
-    screen.getByText(/клиника теряет не разговоры, а следующий шаг/i),
-  ).toBeInTheDocument()
+  expect(screen.getByText(/всего звонков/i)).toBeInTheDocument()
+  expect(screen.getByText(/конверсия в запись/i)).toBeInTheDocument()
+  expect(screen.getByText(/потеря выручки/i)).toBeInTheDocument()
+  expect(screen.getAllByText(/средний балл/i).length).toBeGreaterThanOrEqual(1)
 
-  expect(
-    screen.getByText(/оформленные или подтвержденные записи/i),
-  ).toBeInTheDocument()
+  expect(screen.getByText(/лучший оператор/i)).toBeInTheDocument()
+  expect(screen.getAllByText(/анна смирнова/i).length).toBeGreaterThanOrEqual(1)
 
-  expect(
-    screen.getByText(/нет зафиксированного следующего шага/i),
-  ).toBeInTheDocument()
-
-  expect(screen.getByText(/leakage trend/i)).toBeInTheDocument()
-  expect(screen.getByText(/outcome mix/i)).toBeInTheDocument()
-  expect(screen.getByText(/operator performance/i)).toBeInTheDocument()
-  expect(screen.getByText(/топ операторы/i)).toBeInTheDocument()
-  expect(screen.getByText(/money impact simulator/i)).toBeInTheDocument()
-  expect(screen.getByText(/service line heatmap/i)).toBeInTheDocument()
-  expect(screen.getByText(/executive narrative/i)).toBeInTheDocument()
-  expect(screen.getByText(/benchmark strip/i)).toBeInTheDocument()
+  expect(screen.getByText(/операторы · апрель 2026/i)).toBeInTheDocument()
 }, 15000)

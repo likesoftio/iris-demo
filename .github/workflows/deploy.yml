@@ -24,13 +24,20 @@ jobs:
 
       - run: npm run build
 
-      - name: Deploy to server
-        uses: easingthemes/ssh-deploy@v5
-        with:
+      - name: Prepare deploy bundle
+        run: |
+          mkdir -p deploy/app
+          cp -r dist/* deploy/app/
+          cp dist/index.html deploy/app/404.html
+          cp landing.html deploy/index.html
+
+      - name: Deploy via rsync
+        env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
-          REMOTE_USER: root
-          REMOTE_PORT: "22"
-          SOURCE: dist/
-          TARGET: /srv/dialogik/
-          ARGS: "-avz --delete"
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "$REMOTE_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          rsync -avz --delete deploy/ root@"$REMOTE_HOST":/srv/dialogik/

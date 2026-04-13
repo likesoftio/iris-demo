@@ -3,60 +3,56 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import { CallsListPage } from './CallsListPage'
+import { CompanyProvider } from '../context/CompanyContext'
 
-test('filters the calls list to focus on high-risk leaks', async () => {
-  const user = userEvent.setup()
-
+test('renders all calls in the list by default', () => {
   render(
-    <MemoryRouter>
-      <CallsListPage />
-    </MemoryRouter>,
+    <CompanyProvider>
+      <MemoryRouter>
+        <CallsListPage />
+      </MemoryRouter>
+    </CompanyProvider>,
   )
 
-  expect(screen.getByText(/теплый спрос ушел/i)).toBeInTheDocument()
-  expect(screen.getByText(/высокочековый интерес/i)).toBeInTheDocument()
-
-  await user.click(screen.getByRole('button', { name: /high risk/i }))
-
-  expect(screen.getByText(/теплый спрос ушел/i)).toBeInTheDocument()
-  expect(screen.getByText(/высокочековый интерес/i)).toBeInTheDocument()
-  expect(
-    screen.queryByText(/первичная запись по новообразованию/i),
-  ).not.toBeInTheDocument()
+  expect(screen.getAllByText(/менеджер/i).length).toBeGreaterThanOrEqual(1)
+  expect(screen.getAllByText(/нет отработки ценового возражения/i).length).toBeGreaterThan(0)
 }, 15000)
 
-test('filters the calls list by operator', async () => {
+test('filters the calls list by operator through the filter panel', async () => {
   const user = userEvent.setup()
 
   render(
-    <MemoryRouter>
-      <CallsListPage />
-    </MemoryRouter>,
+    <CompanyProvider>
+      <MemoryRouter>
+        <CallsListPage />
+      </MemoryRouter>
+    </CompanyProvider>,
   )
 
-  await user.selectOptions(screen.getByLabelText(/operator filter/i), 'darya')
+  await user.click(screen.getByRole('button', { name: /фильтры/i }))
 
-  expect(screen.getByText(/активный оператор/i)).toBeInTheDocument()
-  expect(screen.getAllByText(/дарья/i).length).toBeGreaterThanOrEqual(1)
-  expect(screen.getByText(/высокочековый интерес/i)).toBeInTheDocument()
-  expect(
-    screen.queryByText(/теплый спрос ушел/i),
-  ).not.toBeInTheDocument()
+  const selects = screen.getAllByRole('combobox')
+  await user.selectOptions(selects[0], 'Менеджер 1')
+
+  expect(screen.getAllByRole('link', { name: /менеджер 1/i }).length).toBeGreaterThanOrEqual(1)
+  expect(screen.queryByRole('link', { name: /менеджер 6/i })).not.toBeInTheDocument()
 }, 15000)
 
-test('shows a safe empty state when filters return no calls', async () => {
+test('shows empty state when no calls match the search query', async () => {
   const user = userEvent.setup()
 
   render(
-    <MemoryRouter>
-      <CallsListPage />
-    </MemoryRouter>,
+    <CompanyProvider>
+      <MemoryRouter>
+        <CallsListPage />
+      </MemoryRouter>
+    </CompanyProvider>,
   )
 
-  await user.click(screen.getByRole('button', { name: /high risk/i }))
-  await user.selectOptions(screen.getByLabelText(/operator filter/i), 'alexandra')
+  await user.type(
+    screen.getByPlaceholderText(/оператор, клиент, телефон/i),
+    'xyznonexistent99999',
+  )
 
-  expect(
-    screen.getByText(/в этом срезе пока нет звонков/i),
-  ).toBeInTheDocument()
+  expect(screen.getByText(/нет звонков по заданным фильтрам/i)).toBeInTheDocument()
 }, 15000)

@@ -1,11 +1,11 @@
 import { motion } from 'framer-motion'
 import { TrendingUp, TrendingDown, Minus, AlertTriangle, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { kpiCards, trendSeries, outcomeDistribution, operatorStats } from '../data/demoData'
 import { SparklineChart } from '../components/SparklineChart'
 import { DonutChart } from '../components/DonutChart'
 import { ErrorPatternChart } from '../components/ErrorPatternChart'
 import { PerformanceOverviewCard } from '../components/PerformanceOverviewCard'
+import { useCompany } from '../context/CompanyContext'
 
 const fade = (delay = 0) => ({
   initial: { opacity: 0, y: 16 },
@@ -20,6 +20,11 @@ function ScoreColor({ score }: { score: number }) {
 }
 
 export function ExecutiveSummaryPage() {
+  const { companyData } = useCompany()
+  const { kpiCards, trendSeries, outcomeDistribution, operatorStats } = companyData
+  const topOperator = operatorStats[0]
+  const reviewCalls = companyData.callsData.filter((call) => call.riskLevel === 'high').length
+
   return (
     <motion.section {...fade()} className="space-y-5">
       {/* Compact hero strip */}
@@ -28,12 +33,14 @@ export function ExecutiveSummaryPage() {
         className="rounded-2xl bg-white px-6 py-4 shadow-[var(--shadow-soft)] ring-1 ring-[var(--line-soft)] flex flex-wrap items-center gap-4"
       >
         <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-700">Executive Summary · Апрель 2026</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-700">
+            Executive Summary · {companyData.companyMeta.periodLabel}
+          </p>
           <h1 className="mt-1 text-xl font-bold tracking-[-0.03em] text-[#0d2430]">
-            Клиника теряет ₽1.2 млн/мес на неэффективных звонках
+            Качество продаж и сервиса: {companyData.companyMeta.name}
           </h1>
           <p className="mt-1 text-sm text-[#466372]">
-            Конверсия 94% (+4.1 пп). Система помогает удерживать высокий уровень качества обслуживания.
+            Автоматический разбор звонков по B2B-критериям с фокусом на конверсию, возражения и следующий шаг.
           </p>
         </div>
         <div className="flex shrink-0 gap-2">
@@ -74,14 +81,16 @@ export function ExecutiveSummaryPage() {
           <TrendingUp className="size-4 text-emerald-600 mt-0.5 shrink-0" />
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Лучший оператор</p>
-            <p className="mt-0.5 text-sm font-semibold text-[#0d2430]">Анна Смирнова — 4.95 / 5, 389 записей</p>
+            <p className="mt-0.5 text-sm font-semibold text-[#0d2430]">
+              {topOperator ? `${topOperator.name} — ${topOperator.score}/100, ${topOperator.converted} сделок` : 'Нет данных'}
+            </p>
           </div>
         </div>
         <div className="flex items-start gap-3 rounded-xl bg-amber-50/80 px-4 py-3 ring-1 ring-amber-200">
           <AlertTriangle className="size-4 text-amber-600 mt-0.5 shrink-0" />
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">На контроле</p>
-            <p className="mt-0.5 text-sm font-semibold text-[#0d2430]">128 звонков требуют проверки за месяц</p>
+            <p className="mt-0.5 text-sm font-semibold text-[#0d2430]">{reviewCalls} звонков требуют проверки</p>
           </div>
         </div>
       </motion.div>
@@ -98,25 +107,29 @@ export function ExecutiveSummaryPage() {
 
       {/* Error chart */}
       <motion.div {...fade(0.16)}>
-        <ErrorPatternChart />
+        <ErrorPatternChart patterns={companyData.errorPatterns} />
       </motion.div>
 
       {/* Performance overview */}
       <motion.div {...fade(0.17)}>
-        <PerformanceOverviewCard />
+        <PerformanceOverviewCard
+          performanceMetrics={companyData.performanceMetrics}
+          operatorStats={operatorStats}
+          callsData={companyData.callsData}
+        />
       </motion.div>
 
       {/* Compact operator table */}
       <motion.div {...fade(0.18)} className="rounded-2xl bg-white shadow-[var(--shadow-soft)] ring-1 ring-[var(--line-soft)] overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--line-soft)]">
-          <h3 className="text-sm font-semibold text-[#0d2430]">Операторы · Апрель 2026</h3>
+          <h3 className="text-sm font-semibold text-[#0d2430]">Операторы · {companyData.companyMeta.periodLabel}</h3>
           <span className="text-xs text-[#5b7280]">{operatorStats.length} операторов</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[var(--line-soft)] bg-[#f7fbfc]">
-                {['Оператор', 'Звонков', 'Балл', 'Записей', 'Конверсия', 'Тренд'].map(h => (
+                {['Оператор', 'Звонков', 'Балл', 'Сделок', 'Конверсия', 'Тренд'].map(h => (
                   <th key={h} className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-[#5b7280]">
                     {h}
                   </th>

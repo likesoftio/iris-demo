@@ -10,11 +10,11 @@ test('renders demo navigation and executive summary route by default', () => {
     </MemoryRouter>,
   )
 
-  expect(screen.getByRole('link', { name: /overview/i })).toBeInTheDocument()
-  expect(screen.getByRole('link', { name: /calls/i })).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: /^обзор$/i })).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: /^звонки$/i })).toBeInTheDocument()
   expect(
     screen.getByRole('heading', {
-      name: /где клиника теряет пациентов и сколько это стоит/i,
+      name: /качество продаж и сервиса/i,
     }),
   ).toBeInTheDocument()
 }, 15000)
@@ -26,11 +26,11 @@ test('marks calls navigation as active on the calls route', () => {
     </MemoryRouter>,
   )
 
-  expect(screen.getByRole('link', { name: /calls/i })).toHaveAttribute(
+  expect(screen.getByRole('link', { name: /^звонки$/i })).toHaveAttribute(
     'aria-current',
     'page',
   )
-  expect(screen.getByRole('link', { name: /overview/i })).not.toHaveAttribute(
+  expect(screen.getByRole('link', { name: /^обзор$/i })).not.toHaveAttribute(
     'aria-current',
   )
 }, 15000)

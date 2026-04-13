@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Zap, Target, CheckSquare, Square, TrendingDown, ArrowRight } from 'lucide-react'
-import { coachingPriorities, speechTemplates, operatorProfiles, weeklyChecklist } from '../data/demoData'
+import { useCompany } from '../context/CompanyContext'
 
 const fade = (delay = 0) => ({
   initial: { opacity: 0, y: 24 },
@@ -17,6 +17,8 @@ const impactColors = {
 const impactLabels = { high: 'Высокий', medium: 'Средний', low: 'Низкий' }
 
 export function CoachingPage() {
+  const { companyData } = useCompany()
+  const { coachingPriorities, speechTemplates, operatorProfiles, weeklyChecklist } = companyData
   const [checked, setChecked] = useState<Set<string>>(new Set())
 
   function toggle(id: string) {
@@ -34,7 +36,7 @@ export function CoachingPage() {
     <motion.section {...fade()} className="space-y-6">
       <div>
         <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[#0d2430]">Коучинг</h1>
-        <p className="mt-1 text-sm text-[#5b7280]">AI-рекомендации для руководителя · неделя 21–27 апр</p>
+        <p className="mt-1 text-sm text-[#5b7280]">AI-рекомендации для руководителя продаж · {companyData.companyMeta.periodLabel}</p>
       </div>
 
       {/* Priorities */}

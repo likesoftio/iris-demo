@@ -10,13 +10,13 @@ export function DonutChart({ slices }: Props) {
   const cx = 110
   const cy = 110
 
-  let cumulative = 0
-  const total = slices.reduce((s, sl) => s + sl.value, 0)
+  const total = Math.max(1, slices.reduce((s, sl) => s + sl.value, 0))
 
-  const paths = slices.map((sl) => {
-    const startAngle = (cumulative / total) * 2 * Math.PI - Math.PI / 2
-    cumulative += sl.value
-    const endAngle = (cumulative / total) * 2 * Math.PI - Math.PI / 2
+  const paths = slices.map((sl, index) => {
+    const cumulativeBefore = slices.slice(0, index).reduce((sum, item) => sum + item.value, 0)
+    const cumulativeAfter = cumulativeBefore + sl.value
+    const startAngle = (cumulativeBefore / total) * 2 * Math.PI - Math.PI / 2
+    const endAngle = (cumulativeAfter / total) * 2 * Math.PI - Math.PI / 2
 
     const x1 = cx + R * Math.cos(startAngle)
     const y1 = cy + R * Math.sin(startAngle)

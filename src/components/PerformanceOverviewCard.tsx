@@ -2,15 +2,24 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer,
 } from 'recharts'
 import { TrendingUp } from 'lucide-react'
-import { performanceMetrics, operatorStats, callsData } from '../data/demoData'
+import type { CallRecord, OperatorStat, PerformanceMetric } from '../data/demoData'
 
-const avgScore = Math.round(operatorStats.reduce((s, o) => s + o.score, 0) / operatorStats.length)
-const conversionRate = Math.round(operatorStats.reduce((s, o) => s + (o.converted / o.calls) * 100, 0) / operatorStats.length)
-const topOperators = [...operatorStats].sort((a, b) => b.score - a.score).slice(0, 2)
-const riskyCallsCount = callsData.filter(c => c.score < 55).length
-const riskyCallsTotal = 128
+interface PerformanceOverviewCardProps {
+  performanceMetrics: PerformanceMetric[]
+  operatorStats: OperatorStat[]
+  callsData: CallRecord[]
+}
 
-export function PerformanceOverviewCard() {
+export function PerformanceOverviewCard({ performanceMetrics, operatorStats, callsData }: PerformanceOverviewCardProps) {
+  const avgScore = operatorStats.length
+    ? Math.round(operatorStats.reduce((s, o) => s + o.score, 0) / operatorStats.length)
+    : 0
+  const conversionRate = operatorStats.length
+    ? Math.round(operatorStats.reduce((s, o) => s + (o.converted / Math.max(1, o.calls)) * 100, 0) / operatorStats.length)
+    : 0
+  const topOperators = [...operatorStats].sort((a, b) => b.score - a.score).slice(0, 2)
+  const riskyCallsCount = callsData.filter((c) => c.score < 55 || c.riskLevel === 'high').length
+
   return (
     <div className="rounded-[2rem] bg-white shadow-[var(--shadow-soft)] ring-1 ring-[var(--line-soft)] overflow-hidden">
       <div className="px-6 pt-5 pb-2">
@@ -103,8 +112,8 @@ export function PerformanceOverviewCard() {
           {/* Risky calls counter */}
           <div className="rounded-xl bg-amber-50 ring-1 ring-amber-200 px-4 py-3 text-center">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-700">Требуют проверки</p>
-            <p className="mt-1 text-4xl font-bold tracking-[-0.05em] text-amber-800">{riskyCallsTotal}</p>
-            <p className="text-[11px] text-amber-700">звонков за месяц</p>
+            <p className="mt-1 text-4xl font-bold tracking-[-0.05em] text-amber-800">{riskyCallsCount}</p>
+            <p className="text-[11px] text-amber-700">звонков в риске</p>
           </div>
 
           {/* Problematic calls list */}

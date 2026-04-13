@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom'
-import { errorPatterns } from '../data/demoData'
+import type { ErrorPattern } from '../data/demoData'
 
-export function ErrorPatternChart() {
+export function ErrorPatternChart({ patterns }: { patterns: ErrorPattern[] }) {
   const navigate = useNavigate()
-  const max = Math.max(...errorPatterns.map(p => p.percent))
+  const max = Math.max(...patterns.map((p) => p.percent), 1)
 
   return (
     <div className="rounded-[2rem] bg-white p-6 shadow-[var(--shadow-soft)] ring-1 ring-[var(--line-soft)]">
@@ -11,7 +11,7 @@ export function ErrorPatternChart() {
       <h3 className="mt-1 text-lg font-semibold text-[#0d2430]">Топ-5 нарушений</h3>
 
       <div className="mt-5 space-y-3.5">
-        {errorPatterns.map((p) => (
+        {patterns.map((p) => (
           <button
             key={p.id}
             onClick={() => navigate(`/calls?pattern=${p.id}`)}

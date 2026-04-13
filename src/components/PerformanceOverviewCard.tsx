@@ -8,9 +8,10 @@ interface PerformanceOverviewCardProps {
   performanceMetrics: PerformanceMetric[]
   operatorStats: OperatorStat[]
   callsData: CallRecord[]
+  periodLabel: string
 }
 
-export function PerformanceOverviewCard({ performanceMetrics, operatorStats, callsData }: PerformanceOverviewCardProps) {
+export function PerformanceOverviewCard({ performanceMetrics, operatorStats, callsData, periodLabel }: PerformanceOverviewCardProps) {
   const avgScore = operatorStats.length
     ? Math.round(operatorStats.reduce((s, o) => s + o.score, 0) / operatorStats.length)
     : 0
@@ -24,7 +25,9 @@ export function PerformanceOverviewCard({ performanceMetrics, operatorStats, cal
     <div className="rounded-[2rem] bg-white shadow-[var(--shadow-soft)] ring-1 ring-[var(--line-soft)] overflow-hidden">
       <div className="px-6 pt-5 pb-2">
         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#5b7280]">Обзор производительности</p>
-        <p className="mt-0.5 text-[11px] text-[#5b7280]">Анализ диалогов операторов по ключевым показателям за апрель</p>
+        <p className="mt-0.5 text-[11px] text-[#5b7280]">
+          Анализ диалогов операторов по ключевым показателям · {periodLabel}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-0 divide-y md:divide-y-0 md:divide-x divide-[var(--line-soft)]">

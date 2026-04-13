@@ -30,24 +30,24 @@ export function ExecutiveSummaryPage() {
       {/* Compact hero strip */}
       <motion.div
         {...fade(0.04)}
-        className="rounded-2xl bg-white px-6 py-4 shadow-[var(--shadow-soft)] ring-1 ring-[var(--line-soft)] flex flex-wrap items-center gap-4"
+        className="flex flex-wrap items-center gap-4 rounded-2xl bg-white px-4 py-4 shadow-[var(--shadow-soft)] ring-1 ring-[var(--line-soft)] sm:px-6"
       >
         <div className="flex-1 min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-700">
             Executive Summary · {companyData.companyMeta.periodLabel}
           </p>
-          <h1 className="mt-1 text-xl font-bold tracking-[-0.03em] text-[#0d2430]">
+          <h1 className="mt-1 text-lg font-bold tracking-[-0.03em] text-[#0d2430] sm:text-xl">
             Качество продаж и сервиса: {companyData.companyMeta.name}
           </h1>
           <p className="mt-1 text-sm text-[#466372]">
             Автоматический разбор звонков по B2B-критериям с фокусом на конверсию, возражения и следующий шаг.
           </p>
         </div>
-        <div className="flex shrink-0 gap-2">
-          <Link to="/calls" className="inline-flex items-center gap-1.5 rounded-xl bg-cyan-600 px-4 py-2 text-sm font-semibold text-white shadow shadow-cyan-500/25 hover:-translate-y-0.5 transition-transform">
+        <div className="flex w-full shrink-0 flex-wrap gap-2 sm:w-auto">
+          <Link to="/calls" className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-cyan-600 px-4 py-2 text-sm font-semibold text-white shadow shadow-cyan-500/25 transition-transform hover:-translate-y-0.5 sm:flex-none">
             Все звонки <ArrowRight className="size-3.5" />
           </Link>
-          <Link to="/coaching" className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 hover:-translate-y-0.5 transition-transform">
+          <Link to="/coaching" className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition-transform hover:-translate-y-0.5 sm:flex-none">
             Коучинг
           </Link>
         </div>
@@ -116,6 +116,7 @@ export function ExecutiveSummaryPage() {
           performanceMetrics={companyData.performanceMetrics}
           operatorStats={operatorStats}
           callsData={companyData.callsData}
+          periodLabel={companyData.companyMeta.periodLabel}
         />
       </motion.div>
 

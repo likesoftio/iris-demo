@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -17,13 +17,25 @@ const REPORTS = [
 const ACCENT = '#06b6d4'
 const ACCENT2 = '#10b981'
 
-function OperatorsChart() {
+function useMobileLayout() {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 640)
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 640)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  return isMobile
+}
+
+function OperatorsChart({ isMobile }: { isMobile: boolean }) {
   const { companyData } = useCompany()
   const { operatorStats } = companyData
   const data = operatorStats.map(op => ({ name: op.name.split(' ')[0], балл: op.score, конверсия: Math.round((op.converted / op.calls) * 100) }))
   return (
     <ResponsiveContainer width="100%" height={260}>
-      <BarChart data={data} margin={{ top: 4, right: 16, left: -16, bottom: 0 }}>
+      <BarChart data={data} margin={{ top: 4, right: 16, left: isMobile ? 0 : -16, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e5eaec" />
         <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#5b7280' }} />
         <YAxis tick={{ fontSize: 12, fill: '#5b7280' }} />
@@ -36,13 +48,13 @@ function OperatorsChart() {
   )
 }
 
-function ConversionChart() {
+function ConversionChart({ isMobile }: { isMobile: boolean }) {
   const { companyData } = useCompany()
   const { dailyTrends } = companyData
   const data = dailyTrends.map(d => ({ день: d.day, звонков: d.calls, конверсия: d.conversion }))
   return (
     <ResponsiveContainer width="100%" height={260}>
-      <LineChart data={data} margin={{ top: 4, right: 16, left: -16, bottom: 0 }}>
+      <LineChart data={data} margin={{ top: 4, right: 16, left: isMobile ? 0 : -16, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e5eaec" />
         <XAxis dataKey="день" tick={{ fontSize: 11, fill: '#5b7280' }} />
         <YAxis tick={{ fontSize: 12, fill: '#5b7280' }} />
@@ -55,7 +67,7 @@ function ConversionChart() {
   )
 }
 
-function ErrorsChart() {
+function ErrorsChart({ isMobile }: { isMobile: boolean }) {
   const { companyData } = useCompany()
   const { errorPatterns } = companyData
   const data = [...errorPatterns].sort((a, b) => b.percent - a.percent)
@@ -65,7 +77,7 @@ function ErrorsChart() {
       <BarChart data={data} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e5eaec" horizontal={false} />
         <XAxis type="number" tick={{ fontSize: 12, fill: '#5b7280' }} unit="%" />
-        <YAxis dataKey="ошибка" type="category" tick={{ fontSize: 11, fill: '#5b7280' }} width={170} />
+        <YAxis dataKey="ошибка" type="category" tick={{ fontSize: 11, fill: '#5b7280' }} width={isMobile ? 104 : 170} />
         <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e5eaec', fontSize: 12 }} formatter={(v) => [`${v}%`, 'Частота']} />
         <Bar dataKey="частота" fill="#f97316" radius={[0, 6, 6, 0]} name="Частота %" />
       </BarChart>
@@ -73,13 +85,13 @@ function ErrorsChart() {
   )
 }
 
-function HourlyChart() {
+function HourlyChart({ isMobile }: { isMobile: boolean }) {
   const { companyData } = useCompany()
   const { hourlyDistribution } = companyData
   const data = hourlyDistribution.map(h => ({ час: `${h.hour}:00`, звонков: h.calls }))
   return (
     <ResponsiveContainer width="100%" height={260}>
-      <BarChart data={data} margin={{ top: 4, right: 16, left: -16, bottom: 0 }}>
+      <BarChart data={data} margin={{ top: 4, right: 16, left: isMobile ? 0 : -16, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e5eaec" />
         <XAxis dataKey="час" tick={{ fontSize: 11, fill: '#5b7280' }} />
         <YAxis tick={{ fontSize: 12, fill: '#5b7280' }} />
@@ -167,11 +179,13 @@ function OperatorsTable() {
 
 export function ReportsPage() {
   const { companyData } = useCompany()
-  const { conversionFunnel, errorPatterns } = companyData
+  const { conversionFunnel, errorPatterns, operatorStats } = companyData
   const [period, setPeriod] = useState('Месяц')
   const [reportId, setReportId] = useState('operators')
+  const isMobile = useMobileLayout()
 
   const report = REPORTS.find(r => r.id === reportId)!
+  const sortedErrors = [...errorPatterns].sort((a, b) => b.percent - a.percent)
 
   return (
     <motion.section
@@ -229,10 +243,10 @@ export function ReportsPage() {
           <span className="rounded-full bg-[#f0f4f6] px-3 py-1 text-xs font-semibold text-[#5b7280]">{period}</span>
         </div>
 
-        {reportId === 'operators' && <OperatorsChart />}
-        {reportId === 'conversion' && <ConversionChart />}
-        {reportId === 'errors' && <ErrorsChart />}
-        {reportId === 'hourly' && <HourlyChart />}
+        {reportId === 'operators' && <OperatorsChart isMobile={isMobile} />}
+        {reportId === 'conversion' && <ConversionChart isMobile={isMobile} />}
+        {reportId === 'errors' && <ErrorsChart isMobile={isMobile} />}
+        {reportId === 'hourly' && <HourlyChart isMobile={isMobile} />}
       </div>
 
       {/* Funnel summary cards */}
@@ -260,6 +274,35 @@ export function ReportsPage() {
           <h3 className="text-sm font-semibold text-[#0d2430]">{report.label}</h3>
           <span className="text-xs text-[#5b7280]">Данные за: {period}</span>
         </div>
+        <div className="space-y-2 p-3 md:hidden">
+          {(reportId === 'operators' || reportId === 'conversion' || reportId === 'hourly') &&
+            operatorStats.map((op) => (
+              <div key={op.id} className="rounded-xl border border-[var(--line-soft)] bg-[#f7fbfc] p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-[#16323f]">{op.name}</p>
+                  <span className="text-xs font-semibold text-cyan-700">{op.calls} звонков</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between text-xs text-[#5b7280]">
+                  <span>Средний балл: {op.score}</span>
+                  <span>Конверсия: {Math.round((op.converted / op.calls) * 100)}%</span>
+                </div>
+              </div>
+            ))}
+          {reportId === 'errors' &&
+            sortedErrors.map((ep) => (
+              <div key={ep.id} className="rounded-xl border border-[var(--line-soft)] bg-[#f7fbfc] p-3">
+                <p className="text-sm font-semibold text-[#16323f]">{ep.label}</p>
+                <div className="mt-2 flex items-center gap-3">
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#eaf4f6]">
+                    <div className="h-full rounded-full bg-orange-400" style={{ width: `${ep.percent}%` }} />
+                  </div>
+                  <span className="text-xs font-semibold text-orange-700">{ep.percent}%</span>
+                </div>
+              </div>
+            ))}
+          {reportId === 'conversion' && <FunnelTable />}
+        </div>
+        <div className="hidden md:block">
         {(reportId === 'operators' || reportId === 'conversion' || reportId === 'hourly') && <OperatorsTable />}
         {reportId === 'errors' && (
           <div className="overflow-x-auto">
@@ -272,7 +315,7 @@ export function ReportsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--line-soft)]">
-                {[...errorPatterns].sort((a, b) => b.percent - a.percent).map(ep => (
+                {sortedErrors.map(ep => (
                   <tr key={ep.id} className="hover:bg-[#f7fbfc]">
                     <td className="px-4 py-2.5 font-medium text-[#16323f]">{ep.label}</td>
                     <td className="px-4 py-2.5">
@@ -290,6 +333,7 @@ export function ReportsPage() {
           </div>
         )}
         {reportId === 'conversion' && <FunnelTable />}
+        </div>
       </div>
     </motion.section>
   )

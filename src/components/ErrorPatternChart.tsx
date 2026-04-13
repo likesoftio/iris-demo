@@ -4,20 +4,21 @@ import type { ErrorPattern } from '../data/demoData'
 export function ErrorPatternChart({ patterns }: { patterns: ErrorPattern[] }) {
   const navigate = useNavigate()
   const max = Math.max(...patterns.map((p) => p.percent), 1)
+  const topCount = patterns.length
 
   return (
     <div className="rounded-[2rem] bg-white p-6 shadow-[var(--shadow-soft)] ring-1 ring-[var(--line-soft)]">
       <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#5b7280]">Паттерны ошибок команды</p>
-      <h3 className="mt-1 text-lg font-semibold text-[#0d2430]">Топ-5 нарушений</h3>
+      <h3 className="mt-1 text-lg font-semibold text-[#0d2430]">Топ-{topCount} нарушений</h3>
 
       <div className="mt-5 space-y-3.5">
         {patterns.map((p) => (
           <button
             key={p.id}
             onClick={() => navigate(`/calls?pattern=${p.id}`)}
-            className="group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors hover:bg-cyan-50"
+            className="group flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors hover:bg-cyan-50"
           >
-            <span className="w-44 shrink-0 text-sm text-[#466372] group-hover:text-cyan-700 truncate">
+            <span className="max-w-[42%] min-w-0 shrink text-sm text-[#466372] group-hover:text-cyan-700 truncate sm:w-44 sm:max-w-none sm:shrink-0">
               {p.label}
             </span>
             <div className="relative flex-1 h-2 rounded-full bg-[#eaf4f6] overflow-hidden">

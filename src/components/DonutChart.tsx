@@ -11,6 +11,7 @@ export function DonutChart({ slices }: Props) {
   const cy = 110
 
   const total = Math.max(1, slices.reduce((s, sl) => s + sl.value, 0))
+  const conversion = slices.find((slice) => slice.label === 'Сделка')?.value ?? 0
 
   const paths = slices.map((sl, index) => {
     const cumulativeBefore = slices.slice(0, index).reduce((sum, item) => sum + item.value, 0)
@@ -43,7 +44,7 @@ export function DonutChart({ slices }: Props) {
         Распределение
       </h3>
 
-      <div className="mt-4 flex items-center gap-4">
+      <div className="mt-4 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
         <svg viewBox="0 0 220 220" className="w-36 shrink-0">
           {paths.map((p) => (
             <path
@@ -55,7 +56,7 @@ export function DonutChart({ slices }: Props) {
             />
           ))}
           <text x={cx} y={cy - 6} textAnchor="middle" fontSize={22} fontWeight={700} fill="#0d2430" fontFamily="Sora, sans-serif">
-            63%
+            {conversion}%
           </text>
           <text x={cx} y={cy + 14} textAnchor="middle" fontSize={10} fill="#5b7280">
             конверсия

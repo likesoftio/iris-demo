@@ -30,15 +30,15 @@ export function WaveformBar({ duration, score }: Props) {
 
   return (
     <div className="rounded-[1.5rem] bg-gradient-to-r from-[#eaf4f6] to-[#f7fbfc] p-5 ring-1 ring-[var(--line-soft)]">
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap sm:gap-4">
         <button
           onClick={() => setPlaying(p => !p)}
-          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-cyan-600 text-white shadow-lg shadow-cyan-500/30 hover:-translate-y-0.5 hover:bg-cyan-700"
+          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-cyan-600 text-white shadow-lg shadow-cyan-500/30 hover:-translate-y-0.5 hover:bg-cyan-700"
         >
           {playing ? <Pause className="size-4" fill="white" /> : <Play className="size-4" fill="white" />}
         </button>
 
-        <div className="flex flex-1 items-end gap-[2px] h-10 cursor-pointer"
+        <div className="order-3 flex h-10 w-full min-w-0 flex-1 cursor-pointer items-end gap-[2px] sm:order-none sm:w-auto"
           onClick={(e) => {
             const rect = e.currentTarget.getBoundingClientRect()
             setProgress((e.clientX - rect.left) / rect.width)
@@ -58,7 +58,7 @@ export function WaveformBar({ duration, score }: Props) {
           ))}
         </div>
 
-        <div className="text-right shrink-0">
+        <div className="shrink-0 text-left sm:text-right">
           <p className="text-sm font-semibold text-[#0d2430]">{duration}</p>
           <p className="text-xs text-[#5b7280]">длина</p>
         </div>

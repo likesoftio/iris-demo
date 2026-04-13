@@ -7,10 +7,18 @@ import { CoachingPage } from './pages/CoachingPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { CompanyProvider } from './context/CompanyContext'
+import { AuthProvider, useAuth } from './context/AuthContext'
+import { LoginPage } from './pages/LoginPage'
 
-function App() {
+function AppContent() {
+  const { isAuthenticated, user } = useAuth()
+
+  if (!isAuthenticated || !user) {
+    return <LoginPage />
+  }
+
   return (
-    <CompanyProvider>
+    <CompanyProvider allowedCompanies={user.allowedCompanies}>
       <Routes>
         <Route element={<AppShell />}>
           <Route index element={<ExecutiveSummaryPage />} />
@@ -23,6 +31,14 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </CompanyProvider>
+  )
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   )
 }
 

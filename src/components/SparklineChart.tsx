@@ -11,36 +11,41 @@ export function SparklineChart({ points }: Props) {
   const innerW = W - pad.left - pad.right
   const innerH = H - pad.top - pad.bottom
 
-  const maxCalls = Math.max(...points.map(p => p.calls))
+  const maxCalls = Math.max(...points.map(p => p.calls), 1)
   const minCalls = 0
+  const periodCount = points.length
+  const periodsLabel = periodCount > 0 ? `${periodCount} недель` : 'Нет данных'
+  const safePointCount = Math.max(1, points.length - 1)
 
-  const xScale = (i: number) => pad.left + (i / (points.length - 1)) * innerW
-  const yScale = (v: number) => pad.top + innerH - ((v - minCalls) / (maxCalls - minCalls)) * innerH
+  const xScale = (i: number) => pad.left + (i / safePointCount) * innerW
+  const yScale = (v: number) => pad.top + innerH - ((v - minCalls) / Math.max(1, maxCalls - minCalls)) * innerH
 
-  const convertedPath = points
+  const displayPoints = points.length ? points : [{ week: 'W0', calls: 0, converted: 0, lost: 0 }]
+
+  const convertedPath = displayPoints
     .map((p, i) => `${i === 0 ? 'M' : 'L'} ${xScale(i)} ${yScale(p.converted)}`)
     .join(' ')
 
-  const lostPath = points
+  const lostPath = displayPoints
     .map((p, i) => `${i === 0 ? 'M' : 'L'} ${xScale(i)} ${yScale(p.lost)}`)
     .join(' ')
 
   const areaPath =
-    points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xScale(i)} ${yScale(p.converted)}`).join(' ') +
-    ` L ${xScale(points.length - 1)} ${pad.top + innerH} L ${xScale(0)} ${pad.top + innerH} Z`
+    displayPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xScale(i)} ${yScale(p.converted)}`).join(' ') +
+    ` L ${xScale(displayPoints.length - 1)} ${pad.top + innerH} L ${xScale(0)} ${pad.top + innerH} Z`
 
   const yTicks = [0, Math.round(maxCalls * 0.33), Math.round(maxCalls * 0.66), maxCalls]
 
   return (
     <div className="rounded-[2rem] bg-white p-6 shadow-[var(--shadow-soft)] ring-1 ring-[var(--line-soft)] h-full">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#5b7280]">Динамика звонков</p>
           <h3 className="mt-1 text-lg font-semibold text-[#0d2430]" style={{ fontFamily: 'Sora, sans-serif' }}>
-            8 недель
+            {periodsLabel}
           </h3>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="flex items-center gap-1.5 text-xs font-medium text-[#5b7280]">
             <span className="inline-block h-0.5 w-4 rounded bg-[#7fe3c5]" />
             Записались
@@ -87,7 +92,7 @@ export function SparklineChart({ points }: Props) {
         <path d={convertedPath} fill="none" stroke="#7fe3c5" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
 
         {/* Points + labels */}
-        {points.map((p, i) => (
+        {displayPoints.map((p, i) => (
           <g key={p.week}>
             <circle cx={xScale(i)} cy={yScale(p.converted)} r={3.5} fill="#7fe3c5" stroke="white" strokeWidth={2} />
             <text x={xScale(i)} y={H - 8} textAnchor="middle" fontSize={9} fill="#5b7280">

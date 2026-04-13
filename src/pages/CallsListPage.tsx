@@ -111,13 +111,13 @@ export function CallsListPage() {
         </div>
 
         {/* Period picker buttons */}
-        <div className="flex gap-1 rounded-xl bg-[#f0f4f6] p-1">
+        <div className="flex flex-wrap gap-1 rounded-xl bg-[#f0f4f6] p-1">
           {periods.map(p => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
               className={[
-                'rounded-lg px-3 py-1.5 text-xs font-semibold transition-all',
+                'min-h-9 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all',
                 period === p
                   ? 'bg-white text-cyan-700 shadow-sm ring-1 ring-[var(--line-soft)]'
                   : 'text-[#5b7280] hover:text-[#16323f]',
@@ -135,7 +135,7 @@ export function CallsListPage() {
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#5b7280]" />
           <input
             type="text"
-            placeholder="Оператор, клиент, телефон, ключевые фразы..."
+            placeholder="Поиск: оператор, клиент, телефон..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="h-9 w-full rounded-xl border border-[var(--line-soft)] bg-white pl-9 pr-4 text-sm text-[#16323f] placeholder-[#5b7280] outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
@@ -144,7 +144,7 @@ export function CallsListPage() {
         <button
           onClick={() => setFiltersOpen(o => !o)}
           className={[
-            'relative flex h-9 items-center gap-2 rounded-xl border px-3.5 text-sm font-semibold transition-all',
+            'relative flex h-10 items-center gap-2 rounded-xl border px-3.5 text-sm font-semibold transition-all',
             filtersOpen || activeFilterCount > 0
               ? 'border-cyan-400 bg-cyan-50 text-cyan-700'
               : 'border-[var(--line-soft)] bg-white text-[#5b7280] hover:border-slate-300',
@@ -218,9 +218,43 @@ export function CallsListPage() {
         </div>
       )}
 
+      {/* Mobile cards */}
+      <div className="space-y-2 md:hidden">
+        {filtered.map((call, i) => (
+          <div key={call.id} className="rounded-xl border border-[var(--line-soft)] bg-white p-3 shadow-sm">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs text-[#5b7280]">{i + 1}. {call.date}</p>
+                <Link to={`/calls/${call.id}`} className="mt-0.5 block truncate text-sm font-semibold text-cyan-700 hover:underline">
+                  {call.operator}
+                </Link>
+                <p className="truncate text-xs text-[#5b7280]">{call.clientName}</p>
+              </div>
+              <ScoreBadge score={call.score} />
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[#5b7280]">
+              <span>{call.duration}</span>
+              <span>#{call.id}</span>
+              <span>{call.phone}</span>
+            </div>
+            <div className="mt-2">
+              <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ${outcomeColors[call.outcome]}`}>
+                {call.outcome}
+              </span>
+              {call.errorType ? <p className="mt-1 text-xs text-rose-600">{call.errorType}</p> : null}
+            </div>
+          </div>
+        ))}
+        {filtered.length === 0 && (
+          <div className="rounded-xl border border-[var(--line-soft)] bg-white py-10 text-center text-[#5b7280]">
+            <p className="text-sm">Нет звонков по заданным фильтрам</p>
+          </div>
+        )}
+      </div>
+
       {/* Table */}
       <div className="rounded-2xl bg-white shadow-[var(--shadow-soft)] ring-1 ring-[var(--line-soft)] overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[var(--line-soft)] bg-[#f7fbfc]">
@@ -270,11 +304,6 @@ export function CallsListPage() {
               ))}
             </tbody>
           </table>
-          {filtered.length === 0 && (
-            <div className="py-16 text-center text-[#5b7280]">
-              <p className="text-sm">Нет звонков по заданным фильтрам</p>
-            </div>
-          )}
         </div>
       </div>
     </motion.section>

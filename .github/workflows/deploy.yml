@@ -1,25 +1,17 @@
-name: Deploy to GitHub Pages
+name: Deploy to Production
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
 concurrency:
-  group: pages
+  group: deploy-prod
   cancel-in-progress: true
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -32,21 +24,13 @@ jobs:
 
       - run: npm run build
 
-      - name: Assemble Pages layout
-        run: |
-          mkdir -p pages/app
-          # React SPA goes into /app/ subdirectory
-          cp -r dist/* pages/app/
-          # SPA 404 fallback for client-side routing
-          cp dist/index.html pages/app/404.html
-          # Landing page served at repo root
-          cp landing.html pages/index.html
-
-      - uses: actions/configure-pages@v5
-
-      - uses: actions/upload-pages-artifact@v3
+      - name: Deploy to server
+        uses: easingthemes/ssh-deploy@v5
         with:
-          path: pages
-
-      - uses: actions/deploy-pages@v4
-        id: deployment
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+          REMOTE_USER: root
+          REMOTE_PORT: "22"
+          SOURCE: dist/
+          TARGET: /srv/dialogik/
+          ARGS: "-avz --delete"

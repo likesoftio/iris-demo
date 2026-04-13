@@ -109,7 +109,7 @@ export function CoachingPage() {
                 <span>{t.situation}</span>
               </div>
 
-              <div className="mt-5 grid gap-3 grid-cols-2">
+              <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-rose-600 mb-2">До</p>
                   <div className="rounded-xl bg-rose-50 p-3 ring-1 ring-rose-200">

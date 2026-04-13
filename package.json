@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
-    "data:profpotok": "python3 scripts/build_profpotok_dataset.py"
+    "data:profpotok": "python3 scripts/build_profpotok_dataset.py",
+    "data:iris": "python3 scripts/build_iris_dataset.py"
   },
   "dependencies": {
     "clsx": "^2.1.1",

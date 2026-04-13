@@ -89,13 +89,13 @@ export function CallDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-xl bg-[#f0f4f6] p-1 w-fit">
+      <div className="flex w-full gap-1 rounded-xl bg-[#f0f4f6] p-1 sm:w-fit">
         {([['analysis', 'Анализ'], ['transcript', 'Транскрипция']] as [Tab, string][]).map(([key, label]) => (
           <button
             key={key}
             onClick={() => setTab(key)}
             className={[
-              'rounded-lg px-5 py-2 text-sm font-semibold transition-all',
+              'flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition-all sm:flex-none sm:px-5',
               tab === key
                 ? 'bg-white text-cyan-700 shadow-sm ring-1 ring-[var(--line-soft)]'
                 : 'text-[#5b7280] hover:text-[#16323f]',
@@ -165,17 +165,17 @@ export function CallDetailPage() {
                       </div>
                       <div className="flex-1 space-y-1">
                         <div className="rounded-lg bg-rose-50 p-2.5 ring-1 ring-rose-200">
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-rose-700">Ошибка</p>
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-rose-700">Ошибка</p>
                           <p className="mt-0.5 text-sm font-medium text-[#16323f]">{c.label}</p>
                         </div>
                         <div className="ml-2 flex items-center text-[#5b7280]"><ChevronRight className="size-3.5" /></div>
                         <div className="rounded-lg bg-amber-50 p-2.5 ring-1 ring-amber-200">
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-700">Цитата</p>
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700">Цитата</p>
                           <p className="mt-0.5 text-xs italic leading-5 text-[#5b7280]">{c.quote}</p>
                         </div>
                         <div className="ml-2 flex items-center text-[#5b7280]"><ChevronRight className="size-3.5" /></div>
                         <div className="rounded-lg bg-cyan-50 p-2.5 ring-1 ring-cyan-200">
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-cyan-700">Рекомендация</p>
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-cyan-700">Рекомендация</p>
                           <p className="mt-0.5 text-xs leading-5 text-[#16323f]">{c.recommendation}</p>
                         </div>
                       </div>

@@ -20,7 +20,7 @@ export function AppShell() {
 
   const companyLabels = {
     profpotok: 'Профпоток',
-    company_b: 'Компания B',
+    company_b: 'Iris',
   } as const
 
   return (

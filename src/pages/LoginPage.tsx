@@ -34,7 +34,7 @@ export function LoginPage() {
           </div>
           <h1 className="text-2xl font-semibold tracking-[-0.04em] text-[#0d2430]">Авторизация</h1>
           <p className="mt-1 text-sm text-[#5b7280]">
-            Войдите под одним из тестовых доступов: полный доступ, только Компания B или только Профпоток.
+            Войдите под одним из тестовых доступов: полный доступ, только Iris или только Профпоток.
           </p>
 
           <form onSubmit={submit} className="mt-6 space-y-4">

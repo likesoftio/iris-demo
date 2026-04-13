@@ -29,7 +29,7 @@ export const authUsersConfig: AuthConfigUser[] = [
   },
   {
     id: 'iris-access',
-    name: 'Демо: Только Компания B',
+    name: 'Демо: Только Iris',
     login: readEnvValue('VITE_DEMO_LOGIN_IRIS', 'demo-iris'),
     password: readEnvValue('VITE_DEMO_PASSWORD_IRIS', 'iris-only'),
     accessLevel: 'iris_only',

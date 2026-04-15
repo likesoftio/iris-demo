@@ -29,7 +29,7 @@ jobs:
           mkdir -p deploy/app
           cp -r dist/* deploy/app/
           cp dist/index.html deploy/app/404.html
-          cp landing.html deploy/index.html
+          cp -r landing/* deploy/
 
       - name: Deploy via rsync
         env:
